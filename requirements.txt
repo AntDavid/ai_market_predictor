@@ -1,0 +1,9 @@
+streamlit
+yfinance
+pandas
+werkzeug
+scikit-learn
+streamlit-option-menu
+requests
+psycopg2-binary
+extra-streamlit-components

@@ -140,3 +140,6 @@ cython_debug/
 
 # Ignore all .db files
 **/*.db
+
+.streamlit/secrets.toml
+database.db

@@ -1,54 +1,72 @@
-import _sqlite3
+import psycopg2
 import streamlit as st
+from werkzeug.security import generate_password_hash, check_password_hash
 
-def create_connection(db_file):
-    conn = None
-
+def create_connection():
     try:
-        conn = _sqlite3.connect(db_file)
+        return psycopg2.connect(st.secrets["DATABASE_URL"])
+    except Exception as e:
+        st.error(f"Erro ao conectar ao banco de dados: {e}")
+        return None
 
-    except _sqlite3.Error as e:
-        st.error(e)
-
-    return conn
-
-def creat_table(conn):
-    create_users_table = """
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        username TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
-    );
-    """
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute(create_users_table)
-    
-    except _sqlite3.Error as e:
-        st.error(e)
-    
-def add_user(conn, name, email, username, password):
-    add_user = """
-    INSERT INTO users (name, email, username, password)
-    VALUES (?, ?, ?, ?);
-    """
-
-    try:
-        cursor = conn.cursor()
-        cursor.execute(add_user, (name, email, username, password))
+def init_db():
+    conn = create_connection()
+    if conn:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL
+            );
+            """)
         conn.commit()
-    
-    except _sqlite3.Error as e:
-        st.error(e)
-    
-    return cursor.lastrowid
+        conn.close()
 
-def verify_user(conn, username, password):
-    sql = '''SELECT * FROM users WHERE username = ? AND password = ?'''
-    cursor = conn.cursor()
-    cursor.execute(sql, (username, password))
-    user = cursor.fetchone()
-    return user
+def add_user(name, email, username, password):
+    conn = create_connection()
+    if not conn:
+        return False
+        
+    hashed_pwd = generate_password_hash(password)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO users (name, email, username, password) VALUES (%s, %s, %s, %s)",
+                (name, email, username, hashed_pwd)
+            )
+        conn.commit()
+        return True
+    except psycopg2.IntegrityError:
+        return False
+    finally:
+        conn.close()
+
+def verify_user(username, password):
+    conn = create_connection()
+    if not conn:
+        return False
+        
+    with conn.cursor() as cursor:
+        cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+    conn.close()
+    
+    if user and check_password_hash(user[0], password):
+        return True
+    return False
+
+
+def get_user_name(username):
+    conn = create_connection()
+    if not conn:
+        return "Investidor"
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT name FROM users WHERE username = %s", (username,))
+            user = cursor.fetchone()
+        return user[0] if user else "Investidor"
+    finally:
+        conn.close()
