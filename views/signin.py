@@ -1,30 +1,29 @@
 import streamlit as st
-from auth import check_password
-from streamlit_extras.switch_page_button import switch_page
+from utils.db import verify_user
+import datetime
 
-def login(change_page):
-    st.title("Sign In")
-
-    st.text_input("Username", key="username")
-    st.text_input("Password", type="password", key="password")
+def login(cookie_manager):
+    _, col, _ = st.columns([1, 1.2, 1])
     
-    col_one, col_two = st.columns(2)
-
-    with col_one:
-        if st.button("Sign In", use_container_width = True):
-            if check_password():
-                st.success("You are authenticated")
-                st.session_state["authenticated"] = True
-                change_page("authenticated")
-                st.rerun()
-
-            else:
-                st.warning("Invalid username or password")
-                st.experimental_rerun()
-  
-    with col_two:
-        if st.button("Sign Up", use_container_width = True):
-            change_page("Sign Up")
-            st.rerun()
+    with col:
+        st.title("Sign In")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Sign In", use_container_width=True)
+            
+        if submit:
+            if verify_user(username, password):
+                validade = datetime.datetime.now() + datetime.timedelta(minutes=5)
+                cookie_manager.set("auth_user", username, expires_at=validade)
                 
-
+                st.session_state["authenticated"] = True
+                st.session_state["username"] = username
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
+                
+        if st.button("Create an account", use_container_width=True):
+            st.session_state["page"] = "Signup"
+            st.rerun()

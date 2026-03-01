@@ -1,43 +1,27 @@
 import streamlit as st
-from utils.db import create_connection, add_user
-from streamlit_extras.switch_page_button import switch_page
+from utils.db import add_user
 
-
-def signup(change_page):
-    st.title("Sign Up")
+def signup():
+    _, col, _ = st.columns([1, 1.5, 1])
     
-
-    st.form(key="signup_form")
-    name = st.text_input("Name")
-    username = st.text_input("Username")
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
-    confirm_password = st.text_input("Confirm Password", type="password")
-    
-    col_one, col_two = st.columns(2)
-    
-    with col_one:
-        if st.button(label="Sign Up", use_container_width = True):
-            if name and username and email and password and confirm_password:
-                if password == confirm_password:
-                    conn = create_connection("database.db")
-                    user_id = add_user(conn, name, username, email, password)
-                    st.success("Account created successfully")
-                    change_page("Sign In")
-                    st.experimental_rerun()
-                    
-                else:
-                    st.error("Passwords do not match")
-
+    with col:
+        st.markdown("<h2 style='text-align: center;'>Sign Up</h2>", unsafe_allow_html=True)
+        
+        with st.form("signup_form"):
+            name = st.text_input("Full Name")
+            email = st.text_input("Email")
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Create Account", use_container_width=True)
+            
+        if submit:
+            if add_user(name, email, username, password):
+                st.success("Account created successfully! Please log in.")
+                st.session_state["page"] = "Login"
+                st.rerun()
             else:
-                st.error("Please fill in all fields")
-
-    with col_two:
-        if st.button("Sign In", use_container_width = True):
-            change_page("Sign In")
+                st.error("Username or Email already exists.")
+                
+        if st.button("Back to Login", use_container_width=True):
+            st.session_state["page"] = "Login"
             st.rerun()
-
-
-
-
-       
