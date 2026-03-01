@@ -179,6 +179,6 @@ streamlit run app.py
 ---
 
 <div align="center">
-  <p>Desenvolvido por <a href="https://github.com/AntDavid"><b>António David</b></a></p>
+  <p>Desenvolvido por <a href="https://github.com/AntDavid"><b>Antonio David</b></a></p>
   <sub>© 2025 AI Market Predictor — Todos os direitos reservados.</sub>
 </div>
